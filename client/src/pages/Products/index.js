@@ -2,27 +2,42 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-const fetchProducts = async () => {
-  const response = await fetch("https://dummyjson.com/products");
-  const data = await response.json();
-  return data.products;
-};
-
 const Products = () => {
+  const [limit] = useState(4);
+  const [skip, setSkip] = useState(0);
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      return await fetch("https://dummyjson.com/products/categories").then(
+        (res) => res.json()
+      );
+    },
+  });
+
+  const fetchProducts = async () => {
+    const data = await fetch(
+      `https://dummyjson.com/products?limit=${limit}&skip=${skip}`
+    ).then(res => res.json())
+    return data.products;
+  };
+
   const {
     loading,
     error,
     data: products,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", limit, skip],
     queryFn: fetchProducts,
     // staleTime: 10000,
   });
-
-
   if (loading) {
     return <h3>Loading...</h3>;
   }
+  const handleMove = (moveCount) => {
+    setSkip((prevSkip) => {
+      return Math.max(prevSkip + moveCount, 0);
+    });
+  };
 if(error){
   return <h3>{error.message}</h3>
 }
@@ -32,6 +47,24 @@ if(error){
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">
           Customers also purchased
         </h2>
+        <div className="relative mt-2 rounded-md flex items-center gap-8 mb-4">
+          <input
+            onChange={() => {}}
+            type="text"
+            name="price"
+            id="price"
+            className="block w-full rounded-md border-0 py-1.5 pl-7 pr-20 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            placeholder="IPhone"
+          />
+          <select className="border p-2" onChange={() => {}}>
+            <option>Select category</option>
+            {categories?.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
           {products.map((product) => (
@@ -61,6 +94,24 @@ if(error){
               </div>
             </div>
           ))}
+        </div>
+        <div className="flex gap-2 mt-12">
+          <button
+            className="bg-purple-500 px-4 py-1 text-white rounded"
+            onClick={() => {
+              handleMove(-limit);
+            }}
+          >
+            Prev
+          </button>
+          <button
+            className="bg-purple-500 px-4 py-1 text-white rounded"
+            onClick={() => {
+              handleMove(limit);
+            }}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
